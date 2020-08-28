@@ -16,8 +16,9 @@ import {
 	TouchableOpacity,
 	Animated as AnimatedNative,
 } from 'react-native';
+// import { TouchableOpacity } from 'react-native-gesture-handler';
 import { Colors, Fonts } from './constants';
-import Animated from 'react-native-reanimated';
+import Animated, { Value, Easing, Extrapolate } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import {
 	widthPercentageToDP as wp,
@@ -30,20 +31,72 @@ function App() {
 	const AddToCart = () => {
 		const [count, setCount] = useState(0);
 
+		const animatedVal = useRef(new Value(0)).current;
+
+		const addBtnScale = animatedVal.interpolate({
+			inputRange: [0, 1],
+			outputRange: [1, 0],
+			extrapolate: Extrapolate.CLAMP,
+		});
+
+		const addBtnOpacity = animatedVal.interpolate({
+			inputRange: [0, 1],
+			outputRange: [1, 0],
+			extrapolate: Extrapolate.CLAMP,
+		});
+
+		const counterOpacity = animatedVal.interpolate({
+			inputRange: [0, 1],
+			outputRange: [0, 1],
+			extrapolate: Extrapolate.CLAMP,
+		});
+
+		const counterScale = animatedVal.interpolate({
+			inputRange: [0, 1],
+			outputRange: [0, 1],
+			extrapolate: Extrapolate.CLAMP,
+		});
+
 		const changeCount = (val) => {
-			if (val < 100) {
+			if (count === 0 && val === 1) {
+				Animated.timing(animatedVal, {
+					toValue: 1,
+					duration: 250,
+					easing: Easing.ease,
+				}).start(() => setCount(val));
+			} else if (count === 1 && val === 0) {
+				Animated.timing(animatedVal, {
+					toValue: 0,
+					duration: 250,
+					easing: Easing.ease,
+				}).start();
+				setCount(val);
+			} else if (val < 100) {
 				console.log('Count: ' + val);
 				setCount(val);
-				listRef?.current?.scrollToIndex({
-					index: val === 0 ? val : val - 1,
-					animated: true,
-				});
+				if (listRef?.current) {
+					listRef?.current?.scrollToIndex({
+						index: val === 0 ? val : val - 1,
+						animated: true,
+					});
+				}
 			}
 		};
 
-		if (count > 0) {
-			return (
-				<Animated.View style={styles.itemCounterContainer}>
+		return (
+			<>
+				<Animated.View
+					style={[
+						styles.itemCounterContainer,
+						{
+							transform: [
+								{
+									scale: counterScale,
+								},
+							],
+							opacity: counterOpacity,
+						},
+					]}>
 					<TouchableOpacity
 						style={{
 							flex: 1,
@@ -61,10 +114,9 @@ function App() {
 							data={FlatListData}
 							renderItem={({ item, index }) => {
 								return (
-									<View
+									<Animated.View
 										key={index}
 										style={{
-											width: '100%',
 											height: 30,
 											alignItems: 'center',
 											justifyContent: 'center',
@@ -72,7 +124,7 @@ function App() {
 										<Text style={styles.countText}>
 											{item}
 										</Text>
-									</View>
+									</Animated.View>
 								);
 							}}
 							contentContainerStyle={{
@@ -97,21 +149,40 @@ function App() {
 						</Animated.View>
 					</TouchableOpacity>
 				</Animated.View>
-			);
-		} else {
-			return (
-				<TouchableOpacity
-					onPress={() => {
-						// btnToggle(!btnEnabled);
-						// cartAction(Actions.ADD_TO_CART);
-						changeCount(count + 1);
-					}}>
-					<View style={styles.addBtnContainer}>
-						<Text style={styles.addBtnText}>Add</Text>
-					</View>
-				</TouchableOpacity>
-			);
-		}
+				<Animated.View
+					style={[
+						styles.addBtnContainer,
+						{
+							transform: [
+								{
+									scale: addBtnScale,
+								},
+							],
+							opacity: addBtnOpacity,
+						},
+						count > 0 && styles.d_none,
+					]}>
+					<TouchableOpacity
+						onPress={() => {
+							// btnToggle(!btnEnabled);
+							// cartAction(Actions.ADD_TO_CART);
+							changeCount(count + 1);
+							console.log('Adding in cart');
+						}}>
+						<View
+							style={{
+								flex: 1,
+								width: 75,
+								height: 30,
+								alignItems: 'center',
+								justifyContent: 'center',
+							}}>
+							<Text style={styles.addBtnText}>Add</Text>
+						</View>
+					</TouchableOpacity>
+				</Animated.View>
+			</>
+		);
 	};
 	return (
 		<View style={styles.container}>
@@ -125,6 +196,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
+	},
+	d_none: {
+		display: 'none',
 	},
 	cardContainer: {
 		flexDirection: 'row',
@@ -237,13 +311,13 @@ const styles = StyleSheet.create({
 		borderRadius: 5,
 	},
 	addBtnText: {
-		fontSize: 14,
 		fontFamily: Fonts.semiBold,
 		textTransform: 'uppercase',
 		color: Colors.white,
 		textAlign: 'center',
 	},
 	itemCounterContainer: {
+		position: 'absolute',
 		borderRadius: 5,
 		borderColor: Colors.black,
 		borderWidth: 1,
