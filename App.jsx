@@ -61,17 +61,17 @@ function App() {
 			if (count === 0 && val === 1) {
 				Animated.timing(animatedVal, {
 					toValue: 1,
-					duration: 250,
+					duration: 200,
 					easing: Easing.ease,
 				}).start(() => setCount(val));
 			} else if (count === 1 && val === 0) {
 				Animated.timing(animatedVal, {
 					toValue: 0,
-					duration: 250,
+					duration: 200,
 					easing: Easing.ease,
 				}).start();
 				setCount(val);
-			} else if (val < 100) {
+			} else if (val >= 0 && val < 100) {
 				console.log('Count: ' + val);
 				setCount(val);
 				if (listRef?.current) {
